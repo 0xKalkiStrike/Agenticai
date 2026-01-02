@@ -1,0 +1,37 @@
+[
+  {
+    "keywords": ["password", "reset", "forgot", "login", "access"],
+    "answer": "To reset your password: 1) Go to the login page 2) Click 'Forgot Password' 3) Enter your email address 4) Check your email for a reset link 5) Follow the link to create a new password. If you don't receive the email, check your spam folder or contact support.",
+    "category": "account"
+  },
+  {
+    "keywords": ["register", "signup", "create account", "new user"],
+    "answer": "To create a new account: 1) Click 'Register' on the login page 2) Fill in your username, email, and password 3) Verify your email address by clicking the link sent to your inbox 4) Complete your profile setup. Your account will be ready to use!",
+    "category": "account"
+  },
+  {
+    "keywords": ["billing", "payment", "invoice", "subscription", "charge"],
+    "answer": "For billing questions: 1) Check your account dashboard for billing information 2) View your payment history and invoices 3) Update payment methods in account settings 4) Contact billing support for payment disputes or questions about charges.",
+    "category": "billing"
+  },
+  {
+    "keywords": ["error", "bug", "not working", "broken", "crash", "issue"],
+    "answer": "For technical issues: 1) Note the exact error message 2) Try refreshing the page or restarting your browser 3) Clear your browser cache and cookies 4) Disable browser extensions temporarily 5) Try using a different browser. If the problem persists, I'll create a support ticket for our technical team.",
+    "category": "technical"
+  },
+  {
+    "keywords": ["api", "integration", "development", "code", "documentation"],
+    "answer": "For API and development help: 1) Check our API documentation in your dashboard 2) Ensure you're using the correct API endpoints 3) Verify your API key is valid and has proper permissions 4) Review rate limiting guidelines 5) Check our code examples and SDKs. For complex integration issues, I can connect you with our technical team.",
+    "category": "technical"
+  },
+  {
+    "keywords": ["support", "help", "contact", "assistance"],
+    "answer": "I'm here to help! You can: 1) Ask me questions about your account, billing, or technical issues 2) Get step-by-step guidance for common tasks 3) Access our knowledge base and documentation 4) If I can't resolve your issue, I'll create a support ticket for human assistance.",
+    "category": "general"
+  },
+  {
+    "keywords": ["ticket", "support ticket", "escalate", "human help"],
+    "answer": "If you need human assistance, I can create a support ticket for you. Our technical team will review your issue and get back to you. You can track ticket progress in your dashboard and receive notifications when there are updates.",
+    "category": "general"
+  }
+]

@@ -1,0 +1,62 @@
+[
+  {
+    "keywords": ["hello", "hi", "hey", "greetings"],
+    "answer": "Hello! I'm your intelligent AI assistant. I can help you with technical questions, troubleshooting, account issues, and general support. What can I assist you with today?",
+    "category": "chat"
+  },
+  {
+    "keywords": ["login", "sign in", "log on", "access account", "can't login"],
+    "answer": "To log in, use your registered email and password. If you forgot your password, click the 'Forgot Password' link on the login page. Make sure your account is active and approved by an administrator.",
+    "category": "account"
+  },
+  {
+    "keywords": ["password", "reset password", "forgot password", "change password"],
+    "answer": "Passwords must be at least 8 characters long and include a number and a special character. To reset your password, use the 'Forgot Password' link on the login page, or contact your administrator.",
+    "category": "account"
+  },
+  {
+    "keywords": ["api", "documentation", "key", "endpoint"],
+    "answer": "Our API documentation is available at /docs. You can generate an API key in your developer settings. For specific endpoint questions, please check the documentation or ask for details.",
+    "category": "technical"
+  },
+  {
+    "keywords": ["pricing", "cost", "plan", "subscription", "billing"],
+    "answer": "We offer Free, Pro ($29/mo), and Enterprise plans. Check the Pricing page for details. For billing questions or plan changes, I can create a support ticket for you.",
+    "category": "general"
+  },
+  {
+    "keywords": ["features", "what can you do", "capabilities", "help"],
+    "answer": "I can help with: ✅ Account and login issues ✅ Technical questions ✅ API documentation ✅ General troubleshooting ✅ Creating support tickets when needed. What specific area do you need help with?",
+    "category": "general"
+  },
+  {
+    "keywords": ["ticket", "support ticket", "create ticket", "help request"],
+    "answer": "I can automatically create support tickets when I can't solve your issue directly. Just describe your problem, and if I can't help immediately, I'll escalate it to our expert team with all the context.",
+    "category": "support"
+  },
+  {
+    "keywords": ["thank", "thanks", "thank you"],
+    "answer": "You're very welcome! I'm here whenever you need assistance. Feel free to ask if you have any other questions!",
+    "category": "chat"
+  },
+  {
+    "keywords": ["error", "not working", "broken", "issue", "problem"],
+    "answer": "I'd be happy to help troubleshoot your issue. Can you provide more details about what's not working? What error messages are you seeing, and what were you trying to do when the problem occurred?",
+    "category": "troubleshooting"
+  },
+  {
+    "keywords": ["slow", "performance", "loading", "timeout"],
+    "answer": "Performance issues can have several causes. Try: 1) Refresh your browser 2) Clear browser cache 3) Check your internet connection 4) Try a different browser. If the problem persists, I can create a support ticket for technical investigation.",
+    "category": "troubleshooting"
+  },
+  {
+    "keywords": ["account", "profile", "settings", "update profile"],
+    "answer": "You can update your profile settings in your account dashboard. This includes changing your email, password, and notification preferences. If you need help with specific settings, let me know!",
+    "category": "account"
+  },
+  {
+    "keywords": ["team", "members", "collaboration", "invite"],
+    "answer": "Team management features depend on your role. Project Managers can add team members, and Admins can manage all users. If you need to invite someone or manage team access, I can help guide you through the process.",
+    "category": "team"
+  }
+]
