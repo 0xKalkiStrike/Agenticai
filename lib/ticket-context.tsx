@@ -215,16 +215,28 @@ export function TicketProvider({ children }: { children: ReactNode }) {
       // Handle the response format from role-based API
       if (response.users && Array.isArray(response.users)) {
         // Direct array of users from API
-        setUsers(response.users)
+        // Transform snake_case to camelCase for frontend compatibility
+        const transformedUsers = response.users.map((user: any) => ({
+          ...user,
+          isActive: user.is_active !== undefined ? Boolean(user.is_active) : true,
+          createdAt: user.created_at || user.createdAt,
+          lastLogin: user.last_login || user.lastLogin
+        }))
+        
+        setUsers(transformedUsers)
       } else {
         // Handle role-based user object (fallback for other APIs)
         const allUsers: User[] = []
         Object.entries(response).forEach(([role, userList]) => {
           if (Array.isArray(userList)) {
-            allUsers.push(...userList.map((user: any) => ({
+            const transformedRoleUsers = userList.map((user: any) => ({
               ...user,
-              role: role as any
-            })))
+              role: role as any,
+              isActive: user.is_active !== undefined ? Boolean(user.is_active) : true,
+              createdAt: user.created_at || user.createdAt,
+              lastLogin: user.last_login || user.lastLogin
+            }))
+            allUsers.push(...transformedRoleUsers)
           }
         })
         setUsers(allUsers)

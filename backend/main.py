@@ -161,6 +161,18 @@ def login(data: Login, request: Request):
     user_agent = request.headers.get("user-agent")
 
     try:
+        # First check if user exists with correct credentials (ignoring activation status)
+        conn, cur = get_cursor()
+        try:
+            cur.execute(
+                "SELECT id, role, is_active FROM users WHERE username=%s AND password=%s",
+                (data.username, data.password)
+            )
+            user_check = cur.fetchone()
+        finally:
+            close_conn(conn, cur)
+        
+        # Now authenticate with activation check
         user = authenticate_user(data.username, data.password)
     except Exception as e:
         # Database connection error
@@ -169,6 +181,26 @@ def login(data: Login, request: Request):
             status_code=503,
             detail="Service temporarily unavailable. Please try again later."
         )
+
+    # If user exists but authentication failed, check if it's due to deactivation
+    if user_check and not user:
+        if not user_check["is_active"]:
+            try:
+                AuditService.log_login_attempt(
+                    username=data.username,
+                    user_id=user_check["id"],
+                    success=False,
+                    ip_address=client_ip,
+                    user_agent=user_agent,
+                    error_message="Account deactivated"
+                )
+            except:
+                pass  # Don't fail login if audit logging fails
+                
+            raise HTTPException(
+                status_code=403,
+                detail="Your account has been deactivated. Please contact your administrator."
+            )
 
     if not user:
         try:
@@ -585,7 +617,7 @@ def get_all_users(current_user=Depends(get_current_user)):
     conn, cur = get_cursor()
     try:
         cur.execute("""
-            SELECT id, username, email, role, created_at
+            SELECT id, username, email, role, created_at, last_login, is_active
             FROM users
             ORDER BY created_at DESC
         """)
@@ -654,8 +686,16 @@ def assign_ticket_as_admin(ticket_id: int, assignment_data: dict, current_user=D
             VALUES (%s, %s, %s, NOW(), TRUE, %s)
         """, (ticket_id, developer_id, current_user["id"], notes))
         
-        # Update ticket status
-        cur.execute("UPDATE tickets SET status = 'IN_PROGRESS' WHERE id = %s", (ticket_id,))
+        # Update ticket status AND assigned_developer_id
+        cur.execute("""
+            UPDATE tickets 
+            SET status = 'IN_PROGRESS', 
+                assigned_developer_id = %s, 
+                assigned_by = %s, 
+                assigned_at = NOW(),
+                assignment_notes = %s
+            WHERE id = %s
+        """, (developer_id, current_user["id"], notes, ticket_id))
         
         return {"status": "success", "message": "Ticket assigned successfully"}
     finally:
@@ -693,8 +733,16 @@ def assign_ticket_as_pm(ticket_id: int, assignment_data: dict, current_user=Depe
             VALUES (%s, %s, %s, NOW(), TRUE, %s)
         """, (ticket_id, developer_id, current_user["id"], notes))
         
-        # Update ticket status
-        cur.execute("UPDATE tickets SET status = 'IN_PROGRESS' WHERE id = %s", (ticket_id,))
+        # Update ticket status AND assigned_developer_id
+        cur.execute("""
+            UPDATE tickets 
+            SET status = 'IN_PROGRESS', 
+                assigned_developer_id = %s, 
+                assigned_by = %s, 
+                assigned_at = NOW(),
+                assignment_notes = %s
+            WHERE id = %s
+        """, (developer_id, current_user["id"], notes, ticket_id))
         
         return {"status": "success", "message": "Ticket assigned successfully"}
     finally:
@@ -772,7 +820,7 @@ def get_pm_team_members(current_user=Depends(get_current_user)):
     try:
         # For now, return all users grouped by role (PM sees everyone)
         cur.execute("""
-            SELECT id, username, email, role, created_at
+            SELECT id, username, email, role, created_at, last_login, is_active
             FROM users
             ORDER BY role, username
         """)
@@ -873,7 +921,7 @@ def get_developer_team_members(current_user=Depends(get_current_user)):
     try:
         # Developers see their team (PM + other developers + clients)
         cur.execute("""
-            SELECT id, username, email, role, created_at
+            SELECT id, username, email, role, created_at, last_login, is_active
             FROM users
             WHERE role IN ('project_manager', 'developer', 'client')
             ORDER BY role, username
@@ -987,8 +1035,15 @@ def self_assign_ticket(ticket_id: int, current_user=Depends(get_current_user)):
             VALUES (%s, %s, %s, NOW(), TRUE)
         """, (ticket_id, current_user["id"], current_user["id"]))
         
-        # Update ticket status
-        cur.execute("UPDATE tickets SET status = 'IN_PROGRESS' WHERE id = %s", (ticket_id,))
+        # Update ticket status AND assigned_developer_id
+        cur.execute("""
+            UPDATE tickets 
+            SET status = 'IN_PROGRESS', 
+                assigned_developer_id = %s, 
+                assigned_by = %s, 
+                assigned_at = NOW()
+            WHERE id = %s
+        """, (current_user["id"], current_user["id"], ticket_id))
         
         return {"status": "success", "message": "Ticket self-assigned successfully"}
     finally:
@@ -1274,6 +1329,132 @@ def create_admin_user(userData: CreateUserRequest, current_user=Depends(get_curr
         return {"status": "success", "message": f"{userData.role.title()} created successfully"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/admin/users/{user_id}/activate")
+@admin_required
+def activate_user_endpoint(user_id: int, current_user=Depends(get_current_user)):
+    """Admin activates a user account"""
+    try:
+        from enhanced_rbac_database import activate_user
+        
+        # Validate user exists
+        conn, cur = get_cursor()
+        try:
+            cur.execute("SELECT id, username, is_active FROM users WHERE id = %s", (user_id,))
+            user = cur.fetchone()
+            if not user:
+                raise HTTPException(status_code=404, detail="User not found")
+            
+            # Check if user is already active
+            if user['is_active']:
+                return {
+                    "success": True,
+                    "message": f"User {user['username']} is already active",
+                    "user": {
+                        "id": user['id'],
+                        "username": user['username'],
+                        "isActive": True
+                    }
+                }
+            
+            # Activate the user
+            success = activate_user(user_id, current_user["id"])
+            if not success:
+                raise HTTPException(status_code=500, detail="Failed to activate user")
+            
+            # Get updated user data
+            cur.execute("""
+                SELECT id, username, email, role, created_at, last_login, is_active
+                FROM users WHERE id = %s
+            """, (user_id,))
+            updated_user = cur.fetchone()
+            
+            return {
+                "success": True,
+                "message": f"User {updated_user['username']} activated successfully",
+                "user": {
+                    "id": updated_user['id'],
+                    "username": updated_user['username'],
+                    "email": updated_user['email'],
+                    "role": updated_user['role'],
+                    "createdAt": updated_user['created_at'].isoformat() if updated_user['created_at'] else None,
+                    "lastLogin": updated_user['last_login'].isoformat() if updated_user['last_login'] else None,
+                    "isActive": bool(updated_user['is_active'])
+                }
+            }
+        finally:
+            close_conn(conn, cur)
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error activating user {user_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error during user activation")
+
+@app.post("/admin/users/{user_id}/deactivate")
+@admin_required
+def deactivate_user_endpoint(user_id: int, current_user=Depends(get_current_user)):
+    """Admin deactivates a user account"""
+    try:
+        from enhanced_rbac_database import deactivate_user
+        
+        # Prevent self-deactivation
+        if user_id == current_user["id"]:
+            raise HTTPException(status_code=403, detail="Cannot deactivate your own account")
+        
+        # Validate user exists
+        conn, cur = get_cursor()
+        try:
+            cur.execute("SELECT id, username, is_active FROM users WHERE id = %s", (user_id,))
+            user = cur.fetchone()
+            if not user:
+                raise HTTPException(status_code=404, detail="User not found")
+            
+            # Check if user is already inactive
+            if not user['is_active']:
+                return {
+                    "success": True,
+                    "message": f"User {user['username']} is already inactive",
+                    "user": {
+                        "id": user['id'],
+                        "username": user['username'],
+                        "isActive": False
+                    }
+                }
+            
+            # Deactivate the user
+            success = deactivate_user(user_id, current_user["id"])
+            if not success:
+                raise HTTPException(status_code=500, detail="Failed to deactivate user")
+            
+            # Get updated user data
+            cur.execute("""
+                SELECT id, username, email, role, created_at, last_login, is_active
+                FROM users WHERE id = %s
+            """, (user_id,))
+            updated_user = cur.fetchone()
+            
+            return {
+                "success": True,
+                "message": f"User {updated_user['username']} deactivated successfully",
+                "user": {
+                    "id": updated_user['id'],
+                    "username": updated_user['username'],
+                    "email": updated_user['email'],
+                    "role": updated_user['role'],
+                    "createdAt": updated_user['created_at'].isoformat() if updated_user['created_at'] else None,
+                    "lastLogin": updated_user['last_login'].isoformat() if updated_user['last_login'] else None,
+                    "isActive": bool(updated_user['is_active'])
+                }
+            }
+        finally:
+            close_conn(conn, cur)
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deactivating user {user_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error during user deactivation")
 
 # ================= NOTIFICATIONS =================
 @app.get("/notifications")

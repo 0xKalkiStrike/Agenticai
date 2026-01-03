@@ -14,6 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Users, Ticket, Clock, CheckCircle, AlertTriangle, UserCheck, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { UserActionButtons } from "@/components/user-action-buttons"
 
 export default function AdminDashboard() {
   const { 
@@ -33,6 +34,7 @@ export default function AdminDashboard() {
   const [allTickets, setAllTickets] = useState<any[]>([])
   const [loadingAllTickets, setLoadingAllTickets] = useState(false)
   const [authError, setAuthError] = useState<string | null>(null)
+  const [userActionLoading, setUserActionLoading] = useState(false)
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -173,6 +175,56 @@ export default function AdminDashboard() {
       }
     }
   }, [assignTicket, user])
+
+  const handleActivateUser = useCallback(async (userId: number) => {
+    try {
+      setUserActionLoading(true)
+      const result = await apiService.activateUser(userId)
+      
+      // Show success message
+      console.log('User activated successfully:', result.message)
+      
+      // Refresh users to show updated state
+      await refreshUsers(true)
+      
+      // Optional: Show toast notification
+      // toast.success(result.message)
+    } catch (error) {
+      console.error('Failed to activate user:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to activate user'
+      
+      // Optional: Show error toast
+      // toast.error(errorMessage)
+      alert(`Error: ${errorMessage}`)
+    } finally {
+      setUserActionLoading(false)
+    }
+  }, [refreshUsers])
+
+  const handleDeactivateUser = useCallback(async (userId: number) => {
+    try {
+      setUserActionLoading(true)
+      const result = await apiService.deactivateUser(userId)
+      
+      // Show success message
+      console.log('User deactivated successfully:', result.message)
+      
+      // Refresh users to show updated state
+      await refreshUsers(true)
+      
+      // Optional: Show toast notification
+      // toast.success(result.message)
+    } catch (error) {
+      console.error('Failed to deactivate user:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to deactivate user'
+      
+      // Optional: Show error toast
+      // toast.error(errorMessage)
+      alert(`Error: ${errorMessage}`)
+    } finally {
+      setUserActionLoading(false)
+    }
+  }, [refreshUsers])
 
   return (
     <DashboardLayout allowedRoles={["admin"]}>
@@ -525,33 +577,37 @@ export default function AdminDashboard() {
                           </tr>
                         </thead>
                         <tbody>
-                          {users.map((user) => (
-                            <tr key={user.id} className="border-b">
-                              <td className="p-2 font-medium">{user.username}</td>
-                              <td className="p-2 text-muted-foreground">{user.email}</td>
-                              <td className="p-2">
+                          {users.map((tableUser) => (
+                            <tr 
+                              key={tableUser.id} 
+                              className={`border-b ${!tableUser.isActive ? 'user-row-inactive' : ''}`}
+                            >
+                              <td className={`p-2 font-medium ${!tableUser.isActive ? 'user-cell' : ''}`}>
+                                {tableUser.username}
+                              </td>
+                              <td className={`p-2 text-muted-foreground ${!tableUser.isActive ? 'user-cell' : ''}`}>
+                                {tableUser.email}
+                              </td>
+                              <td className={`p-2 ${!tableUser.isActive ? 'user-cell' : ''}`}>
                                 <span className="px-2 py-1 rounded-full text-xs bg-muted">
-                                  {user.role}
+                                  {tableUser.role}
                                 </span>
                               </td>
-                              <td className="p-2">
+                              <td className={`p-2 ${!tableUser.isActive ? 'user-cell' : ''}`}>
                                 <span className={`px-2 py-1 rounded-full text-xs ${
-                                  user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                  tableUser.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                                 }`}>
-                                  {user.isActive ? 'Active' : 'Inactive'}
+                                  {tableUser.isActive ? 'Active' : 'Inactive'}
                                 </span>
                               </td>
                               <td className="p-2">
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => {
-                                    // TODO: Implement edit user functionality
-                                    alert(`Edit user: ${user.username}`)
-                                  }}
-                                >
-                                  Edit
-                                </Button>
+                                <UserActionButtons
+                                  user={tableUser}
+                                  currentUserId={user?.id || 0}
+                                  onActivate={handleActivateUser}
+                                  onDeactivate={handleDeactivateUser}
+                                  isLoading={userActionLoading}
+                                />
                               </td>
                             </tr>
                           ))}

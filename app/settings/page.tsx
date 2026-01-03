@@ -1,9 +1,10 @@
 import { UserSettings } from "@/components/user-settings"
+import { DashboardLayout } from "@/components/dashboard-layout"
 
 export default function SettingsPage() {
   return (
-    <div className="container mx-auto py-6 px-4">
+    <DashboardLayout allowedRoles={["admin", "project_manager", "developer", "client"]}>
       <UserSettings />
-    </div>
+    </DashboardLayout>
   )
 }

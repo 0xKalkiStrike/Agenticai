@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Clock, CheckCircle, Inbox, TrendingUp, AlertCircle, RefreshCw } from "lucide-react"
 import { useState, useEffect, useCallback } from "react"
 import type { Ticket } from "@/lib/types"
+import { apiService } from "@/lib/api"
 
 export default function DeveloperDashboard() {
   const { 
@@ -36,43 +37,45 @@ export default function DeveloperDashboard() {
   const [availableError, setAvailableError] = useState<string | null>(null)
   const [completedError, setCompletedError] = useState<string | null>(null)
 
-  // Function to refresh all ticket data for real-time updates
-  const refreshAllTicketData = useCallback(async () => {
-    if (!user?.role || user.role !== 'developer') {
-      return
-    }
-    
-    try {
-      // Refresh available tickets
-      setLoadingAvailable(true)
-      setAvailableError(null)
-      const available = await getAvailableTicketsForRole()
-      setAvailableTickets(available || [])
-    } catch (error) {
-      console.error("Failed to refresh available tickets:", error)
-      setAvailableError(error instanceof Error ? error.message : 'Failed to refresh available tickets')
-    } finally {
-      setLoadingAvailable(false)
-    }
+  // All useCallback hooks declared at top level consistently
+  const handleSelfAssign = useCallback(async (ticketId: number) => {
+    if (!user?.id) return false
+    const success = await selfAssignTicket(ticketId, user.id)
+    // Real-time updates will handle refreshing ticket lists automatically
+    return success
+  }, [selfAssignTicket, user?.id])
 
-    try {
-      // Refresh completed tickets
-      setLoadingCompleted(true)
-      setCompletedError(null)
-      const completed = await getCompletedTicketsForRole()
-      setCompletedTickets(completed || [])
-    } catch (error) {
-      console.error("Failed to refresh completed tickets:", error)
-      setCompletedError(error instanceof Error ? error.message : 'Failed to refresh completed tickets')
-    } finally {
-      setLoadingCompleted(false)
-    }
-  }, [user?.role, getAvailableTicketsForRole, getCompletedTicketsForRole])
+  const handleComplete = useCallback(async (ticketId: number, notes: string) => {
+    const success = await completeTicket(ticketId, notes)
+    // Real-time updates will handle refreshing ticket lists automatically
+    return success
+  }, [completeTicket])
+
+  const handlePass = useCallback(async (ticketId: number, reason: string) => {
+    const success = await passTicket(ticketId, reason)
+    // Real-time updates will handle refreshing ticket lists automatically
+    return success
+  }, [passTicket])
+
+  const handleCancel = useCallback(async (ticketId: number, reason: string) => {
+    const success = await cancelTicket(ticketId, reason)
+    // Real-time updates will handle refreshing ticket lists automatically
+    return success
+  }, [cancelTicket])
 
   // Load role-specific ticket data
   useEffect(() => {
     const loadTicketData = async () => {
       if (!user?.role || user.role !== 'developer') {
+        return
+      }
+
+      // Check if we have an auth token
+      const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+      if (!token) {
+        console.error('No auth token found, user needs to re-login')
+        setAvailableError('Authentication required. Please log in again.')
+        setCompletedError('Authentication required. Please log in again.')
         return
       }
       
@@ -128,6 +131,7 @@ export default function DeveloperDashboard() {
     return unsubscribe
   }, [user, subscribeToTicketUpdates, getAvailableTicketsForRole, getCompletedTicketsForRole])
 
+  // Early return AFTER all hooks are declared
   if (!user) return null
 
   // For developers, the main tickets array now contains their assigned tickets
@@ -140,32 +144,7 @@ export default function DeveloperDashboard() {
     available: (availableTickets || []).length, // Available count - unassigned open tickets (Req 5.3)
     assigned: (tickets || []).length + (completedTickets || []).length // Total Assigned count - all tickets ever assigned (Req 5.4)
   }
-
-  const handleSelfAssign = useCallback(async (ticketId: number) => {
-    const success = await selfAssignTicket(ticketId, user.id)
-    // Real-time updates will handle refreshing ticket lists automatically
-    return success
-  }, [selfAssignTicket, user.id])
-
-  const handleComplete = useCallback(async (ticketId: number, notes: string) => {
-    const success = await completeTicket(ticketId, notes)
-    // Real-time updates will handle refreshing ticket lists automatically
-    return success
-  }, [completeTicket])
-
-  const handlePass = useCallback(async (ticketId: number, reason: string) => {
-    const success = await passTicket(ticketId, reason)
-    // Real-time updates will handle refreshing ticket lists automatically
-    return success
-  }, [passTicket])
-
-  const handleCancel = useCallback(async (ticketId: number, reason: string) => {
-    const success = await cancelTicket(ticketId, reason)
-    // Real-time updates will handle refreshing ticket lists automatically
-    return success
-  }, [cancelTicket])
-
-
+    
 
   return (
     <DashboardLayout allowedRoles={["developer"]}>

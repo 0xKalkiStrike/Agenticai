@@ -140,6 +140,9 @@ export function TicketTable({
 
         {/* Status Filter */}
         <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger>
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="OPEN">Open</SelectItem>
@@ -150,7 +153,9 @@ export function TicketTable({
 
         {/* Priority Filter */}
         <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+          <SelectTrigger>
             <SelectValue placeholder="Priority" />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Priority</SelectItem>
             <SelectItem value="LOW">Low</SelectItem>
@@ -303,12 +308,19 @@ export function TicketTable({
             <div className="space-y-2">
               <Label>Developer</Label>
               <Select value={selectedDeveloper} onValueChange={setSelectedDeveloper}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a developer" />
+                </SelectTrigger>
                 <SelectContent>
-                  {developers.map((dev) => (
-                    <SelectItem key={dev.id} value={String(dev.id)}>
-                      {dev.username} ({dev.email})
-                    </SelectItem>
-                  ))}
+                  {developers.length === 0 ? (
+                    <SelectItem value="no-developers" disabled>No developers available</SelectItem>
+                  ) : (
+                    developers.map((dev) => (
+                      <SelectItem key={dev.id} value={String(dev.id)}>
+                        {dev.username} ({dev.email})
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>

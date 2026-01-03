@@ -47,8 +47,18 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
                 detail="Invalid token: missing required fields"
             )
         
+        user_id = payload["id"]
+        
+        # Check if user is still active in database
+        from database import is_user_active
+        if not is_user_active(user_id):
+            raise HTTPException(
+                status_code=403, 
+                detail="Your account has been deactivated. Please contact your administrator."
+            )
+        
         return {
-            "id": payload["id"],
+            "id": user_id,
             "role": payload["role"],
             "username": payload.get("sub", "unknown")
         }

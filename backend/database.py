@@ -87,11 +87,42 @@ init_db()
 def authenticate_user(username, password):
     conn, cur = get_cursor()
     try:
+        # Check if user exists and get their status
         cur.execute(
-            "SELECT id, role FROM users WHERE username=%s AND password=%s",
+            "SELECT id, role, is_active FROM users WHERE username=%s AND password=%s",
             (username, password)
         )
-        return cur.fetchone()
+        user_data = cur.fetchone()
+        
+        if not user_data:
+            return None  # Invalid credentials
+            
+        if not user_data["is_active"]:
+            return None  # Account deactivated - return None to trigger proper error handling
+            
+        # User is active, update last login and return user info
+        cur.execute(
+            "UPDATE users SET last_login=NOW() WHERE id=%s", 
+            (user_data["id"],)
+        )
+        
+        return {
+            "id": user_data["id"],
+            "role": user_data["role"]
+        }
+    finally:
+        close_conn(conn, cur)
+
+def is_user_active(user_id):
+    """Check if a user account is active"""
+    conn, cur = get_cursor()
+    try:
+        cur.execute(
+            "SELECT is_active FROM users WHERE id=%s",
+            (user_id,)
+        )
+        result = cur.fetchone()
+        return result["is_active"] if result else False
     finally:
         close_conn(conn, cur)
 

@@ -81,3 +81,23 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* User Management Actions - Visual Status Indicators */
+@layer components {
+  .user-row-inactive {
+    @apply opacity-60;
+    background-color: rgba(0, 0, 0, 0.02);
+  }
+
+  .dark .user-row-inactive {
+    background-color: rgba(255, 255, 255, 0.02);
+  }
+
+  .user-row-inactive .user-cell {
+    @apply text-muted-foreground;
+  }
+
+  .action-button-loading {
+    @apply opacity-70 cursor-not-allowed;
+  }
+}
