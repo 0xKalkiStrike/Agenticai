@@ -408,8 +408,19 @@ export function TicketTable({
             <Button variant="outline" onClick={() => setCancelDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleCancel} disabled={!notes.trim()} variant="destructive">
-              Cancel Ticket
+            <Button 
+              onClick={handleSubmit} 
+              disabled={dialogConfig.type === 'assign' ? !selectedDeveloper || !notes.trim() : !notes.trim()}
+              className={`px-6 ${
+                dialogConfig.type === 'pass' ? 'bg-orange-600 hover:bg-orange-700' :
+                dialogConfig.type === 'complete' ? 'bg-green-600 hover:bg-green-700' :
+                dialogConfig.type === 'cancel' ? 'bg-red-600 hover:bg-red-700' :
+                'bg-blue-600 hover:bg-blue-700' 
+              } text-white`}
+            >
+              {dialogConfig.type === 'pass' ? 'Pass Ticket' : 
+               dialogConfig.type === 'complete' ? 'Mark as Resolved' :
+               dialogConfig.type ? `Confirm ${dialogConfig.type.charAt(0).toUpperCase() + dialogConfig.type.slice(1)}` : 'Confirm'}
             </Button>
           </DialogFooter>
         </DialogContent>
